@@ -241,6 +241,14 @@ class TestLiteLLMCallback:
         callback = HeadroomCallback()
         assert callback.total_tokens_saved == 0
 
+    def test_callback_is_custom_logger(self):
+        """Must subclass CustomLogger or the proxy filters it out entirely."""
+        from litellm.integrations.custom_logger import CustomLogger
+
+        from headroom.integrations.litellm_callback import HeadroomCallback
+
+        assert isinstance(HeadroomCallback(), CustomLogger)
+
     def test_callback_compresses_messages(self):
         """Callback compresses messages in pre_call_hook."""
         import asyncio
@@ -258,7 +266,11 @@ class TestLiteLLMCallback:
             ],
         }
 
-        result = asyncio.run(callback.async_pre_call_hook("key", data, "completion"))
+        result = asyncio.run(
+            callback.async_pre_call_hook(
+                user_api_key_dict=None, cache=None, data=data, call_type="completion"
+            )
+        )
         assert result is data
 
     def test_callback_ignores_non_completion(self):
@@ -270,5 +282,9 @@ class TestLiteLLMCallback:
         callback = HeadroomCallback()
         data = {"messages": [{"role": "user", "content": "hi"}]}
 
-        result = asyncio.run(callback.async_pre_call_hook("key", data, "embedding"))
+        result = asyncio.run(
+            callback.async_pre_call_hook(
+                user_api_key_dict=None, cache=None, data=data, call_type="embedding"
+            )
+        )
         assert result is data
